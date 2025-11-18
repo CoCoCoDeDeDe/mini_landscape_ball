@@ -1,0 +1,146 @@
+# =====================================================
+# Root .gitignore for the3darchvizweb
+# Tailored for a Vite/React + Three.js client and Node server (NeDB)
+# =====================================================
+
+# -------------------------------
+# Node modules / package artifacts
+# -------------------------------
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# -------------------------------
+# Build outputs / caches
+# -------------------------------
+.vite/
+dist/
+build/
+out/
+.cache/
+.parcel-cache/
+.next/
+public/build/
+
+# Vite / bundler caches
+.esbuild/
+*.cache
+
+# -------------------------------
+# Environment files
+# -------------------------------
+.env
+.env.local
+.env.*.local
+client/.env
+server/.env
+
+# -------------------------------
+# Logs and debug output
+# -------------------------------
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+vite-error.log*
+server/logs/
+client/logs/
+
+# -------------------------------
+# Lockfiles (uncomment if you want to track lockfiles in repo)
+# -------------------------------
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# -------------------------------
+# Local data storage / DB files
+# -------------------------------
+server/data/
+server/*.db
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+
+# -------------------------------
+# IDE / Editor settings
+# -------------------------------
+.vscode/
+.idea/
+*.iml
+*.suo
+*.user
+*.userosscache
+*.vscode-test/
+
+# Vim / swap
+*.swp
+*.swo
+
+# -------------------------------
+# OS files
+# -------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# -------------------------------
+# Test output / coverage
+# -------------------------------
+coverage/
+*.lcov
+jest.config.*.local
+
+# -------------------------------
+# Misc temporary files
+# -------------------------------
+*.log
+*.bak
+*.tmp
+*.temp
+*.old
+
+# -------------------------------
+# Editor history / local-only tooling
+# -------------------------------
+.history/
+.cache/
+.sass-cache/
+
+# -------------------------------
+# Optional: ignore built model assets if generated during build
+# -------------------------------
+# public/models/*.gltf
+# public/models/*.glb
+# public/models/*.bin
+
+# End of file
+
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

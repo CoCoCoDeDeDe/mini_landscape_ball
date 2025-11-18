@@ -1,0 +1,18 @@
+{
+  "tasks": [
+    {
+      "label": "Run Client (npm run dev)",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": { "cwd": "${workspaceFolder}/client" },
+      "isBackground": true
+    },
+    {
+      "label": "Run Server (node index.js)",
+      "type": "shell",
+      "command": "node index.js",
+      "options": { "cwd": "${workspaceFolder}/server" },
+      "isBackground": true
+    }
+  ]
+}

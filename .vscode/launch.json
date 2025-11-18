@@ -1,0 +1,25 @@
+{
+  "version": "0.2.0",
+  "compounds": [
+    {
+      "name": "Run Full Stack",
+      "configurations": ["Launch Client", "Launch Server"]
+    }
+  ],
+  "configurations": [
+    {
+      "name": "Launch Client",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run dev",
+      "cwd": "${workspaceFolder}/client"
+    },
+    {
+      "name": "Launch Server",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/server/index.ts",
+      "cwd": "${workspaceFolder}/server"
+    }
+  ]
+}
