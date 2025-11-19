@@ -232,8 +232,6 @@ export const fetch3DModels = (page: number) =>
   api.get(`/model?page=${page}`)
 ```
 
-### Cross Domain
-
 ### Three.js Integration
 **Code**:
 ```
@@ -269,6 +267,143 @@ const Scene3D = () => {
   return <div ref={mountRef} style={{ width: '100vw', height: '100vh' }}/>
 }
 ```
+
+## Cross Domain
+### 
+**Why Care This:**
+  The browser will share the same user conversation for all website. Such as carry cookie from one website to others.
+  The malicious website could get the Cookie from other website which use accessed.
+  The older browser do even allow eny page access DOM of other doamins by `<iframe>`, causing:
+    - Password theft (reading login box content)
+    - Interface deception (covering real buttons)
+### SOP - The Birth Of Security Patches
+  SOP = Same Origin Policy
+  The solution from Netscape in 1995.
+  Its main function is district different sources read recources from each other.
+
+**What Is The Same Origin ?**
+  Compare with `https://site.com/app`:
+    | URL                         | Is Same | Reason                             |
+    | --------------------------- | ------- | ---------------------------------- |
+    | `https://site.com/app`      | Y       | Same Protocol+Domain+Port          |
+    | `https://site.com:443/api`  | Y       | 433 is the default port of HTTPS   |
+    | `http://site.com/app`       | F       | Different protocol (HTTP vs HTTPS) |
+    | `https://app.site.com`      | F       | Different subdomain                |
+    | `https://site.com:8080`     | F       | Different port                     |
+
+#### The Fatal Limitations Of SOP
+##### Restrict Only Reading
+  It only restrict read operations, not write operations.
+  So, the additional protections such as **CSRF Token** are required.
+
+##### Only Realy On Backend
+**The Working Principle Of CORS:**
+  1. Browser send **OPTIONS Pre Scheck Request**
+    ```
+    OPTIONS /data HTTP/1.1
+    Origin: https://malicious.com
+    Access-Control-Request-Method: GET
+    ```
+  2. The Server Decides Whether To Release
+    ```
+    HTTP/1.1 200 OK
+    Access-Control-Allow-Origin: http://trusted.com
+    Access-Control-Allow_Methods: GET, POST
+    ```
+    - Call The Backend API Directly (ignoring browser CORS):
+      `curl https://your-api.com/api/models -H "Origin: https://trusted.com"` send trusted `Origin` manually.
+
+**Root Cause Defects:**
+  | Issue                   | Explanation                                                          | Case                                        |
+  | ----------------------- | -------------------------------------------------------------------- | ------------------------------------------- |
+  | Server Side Control     | Security decisions rely on backend configuration                     | Config `*` leading to data disclosure       |
+  | Client Forced Execution | Only browser complu, **curl/postman ignores**                        | Attackers directly call the API             |
+  | Trust Chain Broken      | Malicious websites can forge `Origin` headers (server cannot verify) | `curl -H "Origin: https://trusted.com" ...` |
+  | Expose backend address  | Hard coded back-end URL by front-end code                            | Hackers scan `api.yoursite.com` directly    |
+
+
+
+#### Key Conclusions
+  **CORS is not security mechanism, but and "escape route" for cross domain collaboration**.
+  It solves **functional issues** (enabling legitimate cross domain work) rather than security concerns.
+
+### Proxy Solution
+#### The Core Principle Of Proxy:
+  ```
+  User -> Front End Domain (your-site.com)
+          |
+          |---Proxy Layer -> Backend Domain (hidden-api.com)
+  ```
+#### The Root Cause Advantages:
+  1. **Eliminating Cross Domain Premises:**
+    For browser, `/api` and `/` belong to **The Same Origin** -> Browser will not trigger CORS checks at all.
+  2. **The Backend is Completely Invisible:**
+    Attackers are unable to directly access backend APIs (only through the proxy layer)
+  3. **Clear Security Boundaries:**
+    - Proxy Layer: Handling network layer security (IP whitelist, speed limit)
+    - Bakend: Focus on business layer security (identity authentication, data verification)
+
+#### Technical Essences
+  Proxy will overlap the **"Application Boundary"** with the **"Security Boudary"**
+    - Traditional CORS: Security boundary in backend (fragile)
+    - Proxy Solution: Security boundary at the edge (professional protection such as Vercel/Cloudflare)
+
+#### **The Principle Of Layerd Defense** In Web Security
+  | Layer             | CORS Scheme               | Proxy Pnal                                      |
+  | ----------------- | ------------------------- | ----------------------------------------------- |
+  | Edge Layer        | Expose backend address    | Vercel/Cloudflare firewall                      |
+  | Transport Layer   | Dependency on HTTPS       | Proxy layer enforces HTTPS                      |
+  | Application Layer | CORS header configuration | No cross domain -> No special handling required |
+  | Data Layer        | Directly exposing DB      | Backend IP whitelist                            |
+
+  **Root Inspiration:**
+    **The essence of the "domain problem" is the mismatch between web architecture and security models**
+      - The Web was originally designed as a document system (with sufficient same origin policy);
+      - The modern web is an application platform that requires finer boundary control.
+    **The proxy scheme aligns the application boundary with the security boundary**, while CORS patches the wrong places.
+
+#### The Action Guide: Thoroughly Avoid Domain Issues
+  **Process:**
+    User browser `https://your-site.com`  --Same Origin Request--> Vercel --Inner Proxy--> Render --IP Whitelist Verify--> MongoDB
+
+  1. **Dev Env**
+  ```
+  // vite.config.js
+  export default {
+    server: {
+      proxy: {
+        '/api': 'http://localhost:5000'
+      }
+    }
+  }
+  ```
+  2. **Production Env**
+  ```
+  // vercel.json
+  {
+    "rewrites": [{
+      "source": "/api/:path*",
+      "destination": "https://your-api.render.com/api/:path*"
+    }]
+  }
+  ```
+  3. **Backend Reinforcement**
+  ```
+  // Only allow requests from Vercel
+  app.use((req, res, next) => {       // Express Requset Middleware
+    if (!req.header['x-vercel-id'] && process.env.NODE_ENV === 'production') {
+      return res.status(403).send('Forbidden')
+    }
+    next()
+  })
+  ```
+
+#### The Ultimate Effect
+  - To Browser: **All requsets are of the same origin**
+  - To Attackers: **Backend APIs are completelyinvisible**
+  - To Developer: **No longer troubled by domain issues**
+  This is the real solution to eliminate the problem from the root.
+  **Proxy is the necessary choice to return to the original intention of web degisn.**
 
 ## Local Dev Deployment
 ### Start MongoDB
