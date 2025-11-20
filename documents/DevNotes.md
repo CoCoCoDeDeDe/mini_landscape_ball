@@ -1,6 +1,6 @@
 <!-- documents\DevNotes.md -->
 
-# Technology Stack
+# Tech Stack
 ## Backend
 ### Stack
 - Node.js (LTS version)
@@ -268,9 +268,8 @@ const Scene3D = () => {
 }
 ```
 
-## Cross Domain
-### 
-**Why Care This:**
+## Cross Domain / Same Domain (FE BE Connection)
+### Why Care This
   The browser will share the same user conversation for all website. Such as carry cookie from one website to others.
   The malicious website could get the Cookie from other website which use accessed.
   The older browser do even allow eny page access DOM of other doamins by `<iframe>`, causing:
@@ -507,6 +506,100 @@ app.use(cors({ origin: 'http://localhost:5173' }))      // Allow Vite port by de
 | Path Delimiter Issue                | Set `"terminal.integrated.dafaultProfile.windows": "PowerShell"` in VSCode                                              |
 | TypeScript Compilation Is Slow      | Enable `"incremental": true` in `tsconfig.json`                                                                         |
 | 3D Model Loading Lags               | When the backend API returns, use ``res.json(models.map(m => m.toObject({ getter: true })))` to strip Mongoose meradata |
+
+# Tech Stack - React + Three.js + FastAPI + MongoDB + MinIO + Redis/Celery
+## Why Use FastAPI
+For this project
+  - 3D models may big, asynchronous I/O avoids blocking;
+  - CAD operation requires low-latency response;
+  - The automatically generated API documentation reduce the cost of communication and collaboration;
+  - Use `uvicorn --reload` to achieve code hot updates and enhance development efficiency.
+
+## Nginx Reverse Proxy Practice
+1. Config `nginx-dev.conf` for dev env:
+  ```
+  server {
+    listen 80;
+    server_name localhost;
+
+    # Frontend Proxy
+    location / {
+      proxy_pass http://frontend:3000;    # Docker Server Name or 127.0.0.1
+      proxy_set_header Host $host;
+      proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    # Backend API Proxy
+    location /api/ {
+      proxy_pass http://backend:8000;   # FastAPI Service
+      proxy_set_header Host $host;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+      # WebSocket Supports
+      proxy_http_version 1.1;
+      proxy_set_header Upgrade $http_upgrade
+      proxy_set_header Connection "upgrade"
+    }
+
+    # 3D Model File Direct Access (bypassing proxy caching)
+    location /models/ {
+      proxy_pass http://storage:9000;   # MinIO Service
+      proxy_buffering off;              # Crucial! Avoid memory overflow of large files
+      client_max_body_size 10G          # The max file size now supported
+    }
+  }
+  ```
+
+2. Production Env Dev (LAN):
+  ````
+  # Startup Command (all services on the same machine)
+  docker run -d --name nginx -p 80:80 -v ./nginx-prod.conf:/etc/nginx/nginx.conf nginx
+  ```
+
+3. Pro Dev Config File `nginx-prod.conf`:
+  ```
+  server {
+    listen 80;
+    server_name 192.168.1.100;      # LAN Server IP
+
+    # Static Resource Caching Optimization
+    location /static/ {
+      root /app/frontend/build;
+      expires 30d;
+    }
+
+    # SPA Route Fallback
+    location / {
+      root /app/frontend/build;
+      try_files $uri $uri/ /index.html;
+    }
+
+    # API Proxy (Add security reinforcement in production enviroment)
+    location /api/ {
+      proxy_pass http://127.0.0.1:8000;
+      proxy_ssl_server_name on;
+
+      # Rate Limiting And Anti-Attack
+      limit_req zone=cad_api burst=20;
+
+      # Hide Backend Information
+      proxy_hide_header X-Powered-By;
+      proxy_hide_header Server;
+    }
+  }
+  ```
+
+# Nginx
+## What is Nginx
+  Nginx pronounced as "engine X".
+  Nginx is a high-perfermance **HTTP server** and **reverse proxy server**.
+  Nginx can also be used as a **load balancer** and **HTTP cache**, as well as **email (IMAP/POP3) proxy server**.
+  
+  Nginx can **handle static files (such as HTML and images)** and serve them to clients via the HTTP protocol.
+  It supports **the separation of static and dynamic resources**, entrusting the management of static resources to Nginx, while forwarding dynamic requests to backend servers.
+  Nginx is written in an **event-driven manner**, thus achieving excellent performance.
+
+  Nginx is **open-source**, developed by Russian programmer Igor Sysoev.
 
 # Recommanded Learning Resources
   - **MongoDB Processing Irregular Data:** [MongoDB Documents = Schema Degisn](https://www.mongodb.com/docs/manual/core/data-modeling-introduction/)
